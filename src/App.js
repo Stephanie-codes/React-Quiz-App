@@ -1,64 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import Start from './components/Start';
+import Quiz from './components/Quiz';
+import End from './components/End';
 
-const Quiz = () => {
-  const [questions, setQuestions] = useState([]);
-  const [selectedAnswer, setSelectedAnswer] = useState('');
+function App() {
+  const [quiz, setQuiz] = useState([]);
+  const [showStart, setShowStart] = useState(true);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [showEnd, setShowEnd] = useState(false);
 
   useEffect(() => {
     fetch('https://opentdb.com/api.php?amount=10&category=9&type=multiple')
-      .then(response => response.json())
-      .then(data => {
-        setQuestions(data.results);
-        console.log(data.results);
-      })
-      .catch(error => console.log(error));
+      .then(res => res.json())
+      .then(data => setQuiz(data))
   }, []);
 
-  const handleAnswer = (questionIndex, answer) => {
-    console.log(answer);
-    setSelectedAnswer(prevState => {
-      const newState = [...prevState];
-      newState[questionIndex] = answer;
-      return newState;
-    });
+  const startQuiz = () => {
+    setShowStart(false);
+    setShowQuiz(true);
   }
-
-  const getAnswerStyle = (answer) => {
-    if (answer === questions.find(q => q.correct_answer === selectedAnswer)?.correct_answer) {
-      return { backgroundColor: 'green' };
-    } else if (answer === selectedAnswer) {
-      return { backgroundColor: 'red' };
-    } else {
-      return {};
-    }
-  }
-
-  const isQuestionAnswered = (questionIndex) => {
-    return selectedAnswer[questionIndex] !== undefined;
-  };
 
   return (
-    <div>
-      <h2>React Quiz App</h2>
-      <h4>General Knowledge</h4>
-      <hr />
-      {questions.map((question, index) => (
-        <div key={index}>
-          <p>{question.question}</p>
-          <ul>
-            {question.incorrect_answers.map((answer, index) => (
-              <li key={index}>
-                <button style={getAnswerStyle(answer)} disabled={isQuestionAnswered(index)} onClick={() => handleAnswer(index, answer)}>{answer}</button>
-              </li>
-            ))}
-            <li key="correct">
-              <button style={getAnswerStyle(question.correct_answer)} disabled={isQuestionAnswered(index)} onClick={() => handleAnswer(index, question.correct_answer)}>{question.correct_answer}</button>
-            </li>
-          </ul>
-        </div>
-      ))}
-    </div>
+    <>
+      {showStart && (
+        <Start
+          startQuiz={startQuiz}
+        />
+      )}
+
+      {showQuiz && (
+        <Quiz
+          quiz={quiz}
+          setShowQuiz={setShowQuiz}
+          setShowEnd={setShowEnd}
+        />
+      )}
+
+      {showEnd && (
+        <End />
+      )}
+    </>
   );
 }
 
-export default Quiz;
+export default App;
