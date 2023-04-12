@@ -1,64 +1,61 @@
 import React, { useEffect, useState } from 'react';
+import he from 'he';
 
 const Quiz = () => {
-    const [questions, setQuestions] = useState([]);
-    const [selectedAnswer, setSelectedAnswer] = useState('');
-  
-    useEffect(() => {
-      fetch('https://opentdb.com/api.php?amount=10&category=9&type=multiple')
-        .then(response => response.json())
-        .then(data => {
-          setQuestions(data.results);
-          console.log(data.results);
-        })
-        .catch(error => console.log(error));
-    }, []);
-  
-    const handleAnswer = (questionIndex, answer) => {
-      console.log(answer);
-      setSelectedAnswer(prevState => {
-        const newState = [...prevState];
-        newState[questionIndex] = answer;
-        return newState;
-      });
-    }
-  
-    const getAnswerStyle = (answer) => {
-      if (answer === questions.find(q => q.correct_answer === selectedAnswer)?.correct_answer) {
-        return { backgroundColor: 'green' };
-      } else if (answer === selectedAnswer) {
-        return { backgroundColor: 'red' };
-      } else {
-        return {};
-      }
-    }
-  
-    const isQuestionAnswered = (questionIndex) => {
-      return selectedAnswer[questionIndex] !== undefined;
-    };
-  
-    return (
-      <div>
-        <h4>General Knowledge</h4>
-        <hr />
-        {questions.map((question, index) => (
-          <div key={index}>
-            <p>{question.question}</p>
-            <ul>
-              {question.incorrect_answers.map((answer, index) => (
-                <li key={index}>
-                  <button style={getAnswerStyle(answer)} disabled={isQuestionAnswered(index)} onClick={() => handleAnswer(index, answer)}>{answer}</button>
-                </li>
-              ))}
-              <li key="correct">
-                <button style={getAnswerStyle(question.correct_answer)} disabled={isQuestionAnswered(index)} onClick={() => handleAnswer(index, question.correct_answer)}>{question.correct_answer}</button>
-              </li>
-            </ul>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  const [questions, setQuestions] = useState([]);
+  const [selectedAnswer, setSelectedAnswer] = useState('');
 
-  export default Quiz;
+  useEffect(() => {
+    fetch('https://opentdb.com/api.php?amount=10&category=9&difficulty=easy&type=multiple')
+      .then(response => response.json())
+      .then(data => {
+        const shuffledQuestions = data.results.map((question) => ({
+          ...question,
+          answers: shuffleArray([
+            ...question.incorrect_answers,
+            question.correct_answer,
+          ]),
+        }));
 
+        setQuestions(data.results.map((question) => ({
+          ...question,
+          question: he.decode(question.question),
+          answers: shuffleArray([
+            ...question.incorrect_answers.map((answer) => he.decode(answer)),
+            he.decode(question.correct_answer),
+          ]),
+        })));
+
+      })
+      .catch(error => console.log(error));
+  }, []);
+
+  const shuffleArray = (array) => {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  };
+
+  const handleAnswerSelect = (answer) => {
+    setSelectedAnswer(answer);
+  };
+
+  return (
+    <div>
+      {questions.map((question, index) => (
+        <div key={index}>
+          <h3>{question.question}</h3>
+          {question.answers.map((answer, index) => (
+            <div key={index}>
+              <button onClick={() => handleAnswerSelect(answer)}>{answer}</button>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Quiz;
